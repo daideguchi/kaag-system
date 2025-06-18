@@ -1,0 +1,244 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ナレッジ管理
+model Knowledge {
+  id                String   @id @default(cuid())
+  title             String
+  content           String
+  source_type       String   // "notion", "file", "text", "url", "browser"
+  source_url        String?
+  category          String   @default("tech") // "tech", "business", "personal", "other"
+  tags              String?  // JSON string として保存
+  status            String   @default("draft") // パイプラインステータス: "draft", "notion_referenced", "analyzed", "generated", "published"
+  ai_analysis       String?  // Claude分析結果のJSON
+  generated_article String?  // 生成された記事のJSON
+  published_article String?  // 公開結果のJSON
+  
+  // ブラウザベース入力用フィールド
+  description       String?  // 短い説明文
+  urls              String?  // 関連URL（JSON配列）
+  notes             String?  // 追加メモ
+  priority          Int      @default(5) // 1-10の優先度
+  is_public         Boolean  @default(false) // 公開設定
+  
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  notion_reference NotionReference?
+  articles         Article[]
+  generation_queue ArticleGenerationQueue[]
+
+  @@map("knowledge")
+}
+
+// Notion参照管理
+model NotionReference {
+  id                  String    @id @default(cuid())
+  knowledge_id        String    @unique
+  page_id             String
+  page_title          String
+  page_url            String
+  last_synced_at      DateTime?
+  notion_updated_at   DateTime?
+  auto_sync_enabled   Boolean   @default(true)  // 自動同期有効/無効
+  sync_frequency      String    @default("daily") // "hourly", "daily", "weekly"
+  content_hash        String?   // コンテンツの重複検出用ハッシュ
+  last_content_hash   String?   // 前回同期時のハッシュ
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  knowledge Knowledge @relation(fields: [knowledge_id], references: [id], onDelete: Cascade)
+  sync_logs NotionSyncLog[]
+
+  @@map("notion_references")
+}
+
+// カテゴリ管理（将来の拡張用）
+model Category {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  color       String?
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  @@map("categories")
+}
+
+// 記事管理
+model Article {
+  id             String    @id @default(cuid())
+  title          String
+  content        String
+  slug           String    @unique
+  emoji          String?
+  type           String    @default("tech") // "tech", "idea", "personal"
+  topics         String?   // JSON string として保存
+  published      Boolean   @default(false)
+  publication_scheduled_at DateTime?
+  published_at   DateTime?
+  github_pushed  Boolean   @default(false)
+  github_sha     String?
+  zenn_url       String?
+  knowledge_id   String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  knowledge Knowledge? @relation(fields: [knowledge_id], references: [id])
+  logs      ArticleLog[]
+  duplications ArticleDuplication[]
+
+  @@map("articles")
+}
+
+// 記事ログ管理
+model ArticleLog {
+  id         String   @id @default(cuid())
+  article_id String
+  action     String   // "created", "updated", "published", "github_pushed"
+  status     String   // "success", "error", "pending"
+  message    String?
+  metadata   String?  // JSON
+  created_at DateTime @default(now())
+
+  article Article @relation(fields: [article_id], references: [id], onDelete: Cascade)
+
+  @@map("article_logs")
+}
+
+// システム設定
+model SystemConfig {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  value      String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("system_config")
+}
+
+// スケジュール管理
+model Schedule {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  cron_pattern String   // "0 9 * * *" など
+  enabled      Boolean  @default(true)
+  task_type    String   // "analyze_content", "generate_article", "publish_article", "sync_notion"
+  filters      String?  // JSON string として保存
+  last_run_at  DateTime?
+  next_run_at  DateTime?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("schedules")
+}
+
+// API使用ログ
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  provider     String   // "claude", "github"
+  endpoint     String
+  tokens_used  Int?
+  cost         Float?
+  status_code  Int
+  response_time Int?    // milliseconds
+  created_at   DateTime @default(now())
+
+  @@map("api_usage_logs")
+}
+
+// Notion同期ログ
+model NotionSyncLog {
+  id                String    @id @default(cuid())
+  notion_reference_id String
+  sync_type         String    // "scheduled", "manual", "webhook"
+  status            String    // "success", "error", "skipped"
+  changes_detected  Boolean   @default(false)
+  content_changes   String?   // JSON: 変更内容の詳細
+  error_message     String?
+  sync_duration_ms  Int?
+  created_at        DateTime  @default(now())
+
+  notion_reference NotionReference @relation(fields: [notion_reference_id], references: [id], onDelete: Cascade)
+
+  @@map("notion_sync_logs")
+}
+
+// 記事重複検出
+model ArticleDuplication {
+  id                String   @id @default(cuid())
+  original_article_id String
+  duplicate_content_hash String
+  similarity_score  Float    // 0.0 - 1.0
+  detected_at       DateTime @default(now())
+  resolved          Boolean  @default(false)
+  resolution_action String?  // "merged", "ignored", "deleted"
+
+  original_article Article @relation(fields: [original_article_id], references: [id], onDelete: Cascade)
+
+  @@map("article_duplications")
+}
+
+// 自動記事生成キュー
+model ArticleGenerationQueue {
+  id           String    @id @default(cuid())
+  knowledge_id String
+  priority     Int       @default(5) // 1-10, 1が最高優先度
+  scheduled_at DateTime?
+  started_at   DateTime?
+  completed_at DateTime?
+  status       String    @default("pending") // "pending", "processing", "completed", "failed"
+  error_message String?
+  retry_count  Int       @default(0)
+  max_retries  Int       @default(3)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  knowledge Knowledge @relation(fields: [knowledge_id], references: [id], onDelete: Cascade)
+
+  @@map("article_generation_queue")
+}
+
+// ユーザーセッション（将来の認証機能用）
+model UserSession {
+  id         String   @id @default(cuid())
+  user_id    String
+  session_token String @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("user_sessions")
+}
+
+// Notion OAuth連携管理
+model NotionIntegration {
+  id                String    @id @default(cuid())
+  access_token      String    // OAuth access token
+  workspace_id      String
+  workspace_name    String
+  workspace_icon    String?
+  bot_id            String
+  owner_type        String    // "user" or "workspace"
+  owner_id          String?
+  owner_name        String?
+  owner_avatar_url  String?
+  is_active         Boolean   @default(true)
+  token_expires_at  DateTime? // トークンの有効期限（もしあれば）
+  last_used_at      DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@unique([workspace_id])
+  @@map("notion_integrations")
+}

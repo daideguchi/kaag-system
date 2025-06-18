@@ -1,103 +1,201 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { Layout } from '@/components/layout/Layout'
+import { useDashboard } from '@/hooks/useDashboard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { 
+  Brain, 
+  FileText, 
+  Calendar, 
+  TrendingUp,
+  Plus,
+  Clock,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react'
+
+export default function Dashboard() {
+  const { stats, activities, performanceData, loading, error } = useDashboard()
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <Layout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              ダッシュボード
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              KAAG システムの概要と最新の活動状況
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              ナレッジ追加
+            </Button>
+            <Button variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              記事生成
+            </Button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                総ナレッジ数
+              </CardTitle>
+              <Brain className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalKnowledge}</div>
+              <p className="text-xs text-muted-foreground">
+                登録済みナレッジ
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                総記事数
+              </CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.articlesThisMonth}</div>
+              <p className="text-xs text-muted-foreground">
+                今月の記事数
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                カテゴリ数
+              </CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCategories}</div>
+              <p className="text-xs text-muted-foreground">
+                登録カテゴリ
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                今日の活動
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activities.length}</div>
+              <p className="text-xs text-muted-foreground">
+                最近の活動数
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activities */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="h-5 w-5 mr-2" />
+                最近の活動
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activities.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Clock className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600">まだ活動履歴がありません</p>
+                  <p className="text-xs text-gray-500">ナレッジを追加すると活動が記録されます</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activities.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{activity.title}</p>
+                        <p className="text-xs text-gray-500">{activity.description}</p>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(activity.timestamp).toLocaleDateString('ja-JP')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                予定された投稿
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Calendar className="h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600">予定された投稿はありません</p>
+                <p className="text-xs text-gray-500">記事のスケジュール投稿を設定できます</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* System Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              システム状況
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div>
+                  <p className="text-sm font-medium">Claude API</p>
+                  <p className="text-xs text-muted-foreground">正常稼働中</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div>
+                  <p className="text-sm font-medium">GitHub API</p>
+                  <p className="text-xs text-muted-foreground">正常稼働中</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div>
+                  <p className="text-sm font-medium">自動投稿</p>
+                  <p className="text-xs text-muted-foreground">スケジュール通り実行中</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
+  )
 }
